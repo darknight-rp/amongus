@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Social Deduction Prototype</title>
+  <style>
+    :root {
+      --bg: #101418;
+      --panel: #171d23;
+      --panel-2: #202832;
+      --text: #eef4f8;
+      --muted: #a6b3bd;
+      --line: #33414e;
+      --green: #40c878;
+      --red: #ff5b5f;
+      --yellow: #ffd166;
+      --cyan: #43d5ff;
+      --blue: #638cff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(67, 213, 255, 0.08), transparent 28%),
+        linear-gradient(135deg, #101418, #12161b 48%, #161216);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      min-height: 38px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: #587086;
+      background: #26313c;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .primary { background: #275f45; border-color: #3f9369; }
+    .danger { background: #652d34; border-color: #a3444e; }
+    .warn { background: #5d4a1f; border-color: #a9852c; }
+    .blue { background: #2e3f6d; border-color: #526eb5; }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 300px minmax(480px, 1fr) 320px;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .panel {
+      min-height: 0;
+      border: 1px solid var(--line);
+      background: rgba(23, 29, 35, 0.93);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 14px 50px rgba(0, 0, 0, 0.28);
+    }
+
+    .panel-header {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(32, 40, 50, 0.88);
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 16px; }
+    h2 { font-size: 14px; color: var(--muted); font-weight: 600; }
+    h3 { font-size: 13px; color: var(--text); }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .body {
+      padding: 12px;
+      overflow: auto;
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 1fr 86px;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .field input, .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #0f1419;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 7px 8px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 9px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toggle input { width: 18px; height: 18px; }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .game {
+      position: relative;
+      display: grid;
+      grid-template-rows: 48px 1fr 110px;
+      min-height: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(32, 40, 50, 0.88);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: #10161c;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .bar {
+      flex: 1;
+      height: 18px;
+      border: 1px solid var(--line);
+      background: #0d1217;
+      border-radius: 999px;
+      overflow: hidden;
+      min-width: 110px;
+    }
+
+    .bar > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green), #81e6a8);
+      transition: width 0.2s ease;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #0c1014;
+    }
+
+    .controls {
+      border-top: 1px solid var(--line);
+      background: rgba(23, 29, 35, 0.95);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(88px, 1fr));
+      gap: 8px;
+      align-content: center;
+    }
+
+    .log {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .log-entry {
+      border-left: 3px solid var(--line);
+      background: rgba(255, 255, 255, 0.035);
+      padding: 8px;
+      border-radius: 4px;
+      line-height: 1.35;
+    }
+
+    .players {
+      display: grid;
+      gap: 8px;
+    }
+
+    .player-row {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 13px;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.65);
+    }
+
+    .tag {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 48px 0 110px;
+      display: none;
+      place-items: center;
+      background: rgba(4, 8, 12, 0.72);
+      backdrop-filter: blur(4px);
+      z-index: 5;
+      padding: 16px;
+    }
+
+    .dialog {
+      width: min(640px, 100%);
+      max-height: 100%;
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: #151b21;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+    }
+
+    .dialog h2 {
+      color: var(--text);
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .dialog p {
+      color: var(--muted);
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .vote-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .mini {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .mini button {
+      height: 52px;
+      font-size: 20px;
+      padding: 0;
+    }
+
+    .status-line {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 1040px) {
+      body { overflow: auto; }
+      .app {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+      .game {
+        height: 72vh;
+        min-height: 620px;
+      }
+      .controls {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel side">
+      <div class="panel-header">
+        <h1>Lobby</h1>
+        <span class="pill" id="statePill">Lobby</span>
+      </div>
+      <div class="body">
+        <label class="field">Играчи
+          <input id="maxPlayers" type="number" min="4" max="15" value="8">
+        </label>
+        <label class="field">Импостори
+          <input id="numImpostors" type="number" min="1" max="3" value="2">
+        </label>
+        <label class="field">Kill cooldown
+          <input id="killCooldown" type="number" min="5" max="60" value="18">
+        </label>
+        <label class="field">Скорост
+          <input id="playerSpeed" type="number" min="1" max="5" step="0.25" value="2.5">
+        </label>
+        <label class="field">Crew vision
+          <input id="visionCrew" type="number" min="60" max="240" value="145">
+        </label>
+        <label class="field">Impostor vision
+          <input id="visionImpostor" type="number" min="80" max="280" value="185">
+        </label>
+        <label class="field">Common tasks
+          <input id="taskCountCommon" type="number" min="0" max="4" value="1">
+        </label>
+        <label class="field">Short tasks
+          <input id="taskCountShort" type="number" min="1" max="8" value="3">
+        </label>
+        <label class="field">Long tasks
+          <input id="taskCountLong" type="number" min="0" max="4" value="1">
+        </label>
+        <label class="field">Discussion
+          <input id="discussionTime" type="number" min="5" max="120" value="15">
+        </label>
+        <label class="field">Voting
+          <input id="votingTime" type="number" min="5" max="120" value="20">
+        </label>
+        <label class="toggle">Confirm ejects <input id="confirmEjects" type="checkbox" checked></label>
+        <label class="toggle">Anonymous votes <input id="anonymousVotes" type="checkbox"></label>
+        <div class="actions">
+          <button class="primary" id="startBtn">Start</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        <p class="status-line">WASD за движение. Доближи задача, тяло, vent или sabotage обект и използвай бутоните долу.</p>
+      </div>
+    </section>
+
+    <section class="panel game">
+      <div class="topbar">
+        <span class="pill" id="rolePill">Role: -</span>
+        <span class="pill" id="roomPill">Room: Cafeteria</span>
+        <div class="bar" aria-label="Task progress"><div id="taskBar"></div></div>
+        <span class="pill" id="timerPill">00:00</span>
+      </div>
+      <canvas id="game" width="1120" height="720"></canvas>
+      <div class="controls">
+        <button class="primary" id="taskBtn">Task</button>
+        <button class="danger" id="killBtn">Kill</button>
+        <button class="warn" id="reportBtn">Report</button>
+        <button class="blue" id="ventBtn">Vent</button>
+        <button class="warn" id="sabotageBtn">Sabotage</button>
+      </div>
+      <div class="overlay" id="overlay">
+        <div class="dialog" id="dialog"></div>
+      </div>
+    </section>
+
+    <section class="panel side">
+      <div class="panel-header">
+        <h1>Match Data</h1>
+        <span class="pill" id="alivePill">0 alive</span>
+      </div>
+      <div class="body">
+        <h2>Players</h2>
+        <div class="players" id="players"></div>
+        <div style="height:14px"></div>
+        <h2>Event Log</h2>
+        <div class="log" id="log"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const ui = {
+      state: document.getElementById("statePill"),
+      role: document.getElementById("rolePill"),
+      room: document.getElementById("roomPill"),
+      timer: document.getElementById("timerPill"),
+      alive: document.getElementById("alivePill"),
+      taskBar: document.getElementById("taskBar"),
+      players: document.getElementById("players"),
+      log: document.getElementById("log"),
+      overlay: document.getElementById("overlay"),
+      dialog: document.getElementById("dialog")
+    };
+
+    const colors = ["#f05252", "#3da5ff", "#51cf66", "#ffd43b", "#cc5de8", "#ff922b", "#22b8cf", "#f783ac", "#ced4da", "#94d82d", "#845ef7", "#20c997", "#ffa8a8", "#74c0fc", "#e9ecef"];
+    const names = ["Nova", "Mira", "Kris", "Vega", "Orion", "Lena", "Ivo", "Raya", "Max", "Toni", "Alex", "Nia", "Bo", "Emil", "Sia"];
+    const taskNames = ["Swipe Card", "Wiring", "Fuel Engine", "Download Data", "Align Engine", "Calibrate", "Prime Shields", "Upload Data"];
+
+    const rooms = [
+      { name: "Cafeteria", x: 420, y: 45, w: 280, h: 165 },
+      { name: "MedBay", x: 90, y: 80, w: 250, h: 150 },
+      { name: "Reactor", x: 80, y: 285, w: 230, h: 205 },
+      { name: "Electrical", x: 390, y: 300, w: 230, h: 170 },
+      { name: "Storage", x: 710, y: 285, w: 310, h: 190 },
+      { name: "Oxygen", x: 775, y: 80, w: 245, h: 145 },
+      { name: "Admin", x: 455, y: 525, w: 230, h: 145 }
+    ];
+
+    const taskPoints = [
+      { room: "Cafeteria", x: 530, y: 120, name: "Download Data", type: "short" },
+      { room: "MedBay", x: 190, y: 150, name: "Scan Sample", type: "long" },
+      { room: "Reactor", x: 165, y: 385, name: "Start Reactor", type: "long" },
+      { room: "Electrical", x: 495, y: 382, name: "Wiring", type: "common" },
+      { room: "Storage", x: 845, y: 380, name: "Fuel Engine", type: "short" },
+      { room: "Oxygen", x: 890, y: 150, name: "Oxygen Filter", type: "short" },
+      { room: "Admin", x: 570, y: 590, name: "Swipe Card", type: "common" },
+      { room: "Storage", x: 760, y: 430, name: "Upload Data", type: "short" }
+    ];
+
+    const vents = [
+      { id: 0, x: 210, y: 195, links: [1, 3] },
+      { id: 1, x: 520, y: 430, links: [0, 2] },
+      { id: 2, x: 910, y: 205, links: [1, 3] },
+      { id: 3, x: 830, y: 430, links: [2, 0] }
+    ];
+
+    const sabotageObjects = [
+      { type: "Lights", x: 435, y: 350, active: false, timer: 0 },
+      { type: "Reactor", x: 135, y: 340, active: false, timer: 0 },
+      { type: "Oxygen", x: 940, y: 125, active: false, timer: 0 },
+      { type: "Comms", x: 615, y: 610, active: false, timer: 0 }
+    ];
+
+    const corridors = [
+      { x: 315, y: 142, w: 520, h: 55 },
+      { x: 520, y: 185, w: 70, h: 400 },
+      { x: 270, y: 375, w: 520, h: 58 },
+      { x: 835, y: 185, w: 62, h: 250 }
+    ];
+
+    const state = {
+      phase: "Lobby",
+      players: [],
+      localId: 0,
+      bodies: [],
+      tasks: [],
+      meetingTimer: 0,
+      voteTimer: 0,
+      discussionOpen: false,
+      voteOpen: false,
+      winner: null,
+      keys: new Set(),
+      last: performance.now(),
+      inVent: false,
+      currentVent: null,
+      log: []
+    };
+
+    function settings() {
+      const value = id => document.getElementById(id).type === "checkbox"
+        ? document.getElementById(id).checked
+        : Number(document.getElementById(id).value);
+      return {
+        maxPlayers: clamp(value("maxPlayers"), 4, 15),
+        numImpostors: clamp(value("numImpostors"), 1, 3),
+        killCooldown: value("killCooldown"),
+        playerSpeed: value("playerSpeed"),
+        visionCrew: value("visionCrew"),
+        visionImpostor: value("visionImpostor"),
+        taskCountCommon: value("taskCountCommon"),
+        taskCountShort: value("taskCountShort"),
+        taskCountLong: value("taskCountLong"),
+        discussionTime: value("discussionTime"),
+        votingTime: value("votingTime"),
+        confirmEjects: value("confirmEjects"),
+        anonymousVotes: value("anonymousVotes")
+      };
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function dist(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function addLog(text, color = "var(--line)") {
+      state.log.unshift({ text, color });
+      state.log = state.log.slice(0, 10);
+      renderLog();
+    }
+
+    function createPlayer(id, role, local = false) {
+      return {
+        id,
+        nickname: names[id],
+        role,
+        alive: true,
+        disconnected: false,
+        x: 560 + (Math.random() - 0.5) * 80,
+        y: 128 + (Math.random() - 0.5) * 50,
+        vx: 0,
+        vy: 0,
+        targetX: 560,
+        targetY: 128,
+        currentTask: 0,
+        inVent: false,
+        killCooldown: role === "Impostor" ? settings().killCooldown : 0,
+        voteTarget: null,
+        suitColor: colors[id],
+        cosmetics: { hat: id % 3 === 0 ? "visor" : "none" },
+        local
+      };
+    }
+
+    function startMatch() {
+      const s = settings();
+      const impostorIds = new Set();
+      while (impostorIds.size < Math.min(s.numImpostors, s.maxPlayers - 2)) {
+        impostorIds.add(Math.floor(Math.random() * s.maxPlayers));
+      }
+      state.players = Array.from({ length: s.maxPlayers }, (_, id) => createPlayer(id, impostorIds.has(id) ? "Impostor" : "Crew", id === 0));
+      state.bodies = [];
+      state.tasks = buildTasks(s);
+      state.phase = "Gameplay";
+      state.winner = null;
+      state.inVent = false;
+      state.currentVent = null;
+      sabotageObjects.forEach(o => { o.active = false; o.timer = 0; });
+      addLog("Match start. Ролите са раздадени.", "var(--cyan)");
+      addLog(`Ти си ${local().role}.`, local().role === "Impostor" ? "var(--red)" : "var(--green)");
+      closeOverlay();
+      updateUi();
+    }
+
+    function buildTasks(s) {
+      const wanted = { common: s.taskCountCommon, short: s.taskCountShort, long: s.taskCountLong };
+      const selected = [];
+      for (const type of ["common", "short", "long"]) {
+        const pool = taskPoints.filter(t => t.type === type);
+        for (let i = 0; i < wanted[type]; i++) selected.push(pool[i % pool.length]);
+      }
+      return selected.map((t, id) => ({
+        id,
+        name: t.name || taskNames[id % taskNames.length],
+        type: t.type,
+        completed: false,
+        step: 0,
+        x: t.x,
+        y: t.y,
+        room: t.room
+      }));
+    }
+
+    function resetMatch() {
+      state.phase = "Lobby";
+      state.players = [];
+      state.bodies = [];
+      state.tasks = [];
+      state.winner = null;
+      state.log = [];
+      sabotageObjects.forEach(o => { o.active = false; o.timer = 0; });
+      closeOverlay();
+      updateUi();
+    }
+
+    function local() {
+      return state.players[state.localId];
+    }
+
+    function isWalkable(x, y) {
+      const hit = [...rooms, ...corridors].some(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
+      return hit && x > 35 && y > 35 && x < canvas.width - 35 && y < canvas.height - 35;
+    }
+
+    function getRoomAt(x, y) {
+      return rooms.find(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h)?.name || "Corridor";
+    }
+
+    function nearest(list, maxDistance) {
+      const p = local();
+      if (!p) return null;
+      return list
+        .map(item => ({ item, d: dist(p, item) }))
+        .filter(row => row.d <= maxDistance)
+        .sort((a, b) => a.d - b.d)[0]?.item || null;
+    }
+
+    function useTask() {
+      if (state.phase !== "Gameplay" || !local()?.alive) return;
+      const task = nearest(state.tasks.filter(t => !t.completed), 42);
+      if (!task) return addLog("Няма активна задача наблизо.");
+      showTaskMini(task);
+    }
+
+    function showTaskMini(task) {
+      state.phase = "Task";
+      const isSwipe = task.name.includes("Swipe");
+      const content = isSwipe
+        ? `<p>${task.name}: натисни точния ритъм. Твърде бързо или твърде бавно fail.</p>
+           <button class="primary" id="doMini">Swipe</button>`
+        : `<p>${task.name}: задръж процеса до завършване.</p>
+           <button class="primary" id="doMini">Complete</button>`;
+      showOverlay(`<h2>${task.name}</h2>${content}<button id="cancelMini">Cancel</button>`);
+      document.getElementById("cancelMini").onclick = () => { state.phase = "Gameplay"; closeOverlay(); updateUi(); };
+      document.getElementById("doMini").onclick = () => {
+        task.completed = true;
+        addLog(`Task complete: ${task.name}`, "var(--green)");
+        state.phase = "Gameplay";
+        closeOverlay();
+        checkWin();
+        updateUi();
+      };
+    }
+
+    function kill() {
+      const me = local();
+      if (state.phase !== "Gameplay" || !me?.alive || me.role !== "Impostor" || me.killCooldown > 0) return;
+      const target = state.players
+        .filter(p => p.alive && p.role !== "Impostor" && p.id !== me.id && dist(me, p) < 56)
+        .sort((a, b) => dist(me, a) - dist(me, b))[0];
+      if (!target) return addLog("Няма валидна цел в kill range.");
+      target.alive = false;
+      state.bodies.push({ playerId: target.id, x: target.x, y: target.y, timeOfDeath: performance.now() });
+      me.killCooldown = settings().killCooldown;
+      addLog(`${me.nickname} killed ${target.nickname}.`, "var(--red)");
+      checkWin();
+      updateUi();
+    }
+
+    function report() {
+      if (state.phase !== "Gameplay" || !local()?.alive) return;
+      const body = nearest(state.bodies, 64);
+      if (!body) return addLog("Няма тяло за report наблизо.");
+      startMeeting(`Body reported by ${local().nickname}.`);
+    }
+
+    function startMeeting(reason) {
+      const s = settings();
+      state.phase = "Discussion";
+      state.meetingTimer = s.discussionTime;
+      state.voteTimer = s.votingTime;
+      state.discussionOpen = true;
+      state.voteOpen = false;
+      state.bodies = [];
+      state.players.forEach(p => {
+        p.voteTarget = null;
+        p.x = 560 + (Math.random() - 0.5) * 120;
+        p.y = 128 + (Math.random() - 0.5) * 60;
+        p.inVent = false;
+      });
+      addLog(reason, "var(--yellow)");
+      showMeeting(reason);
+      updateUi();
+    }
+
+    function showMeeting(reason) {
+      showOverlay(`
+        <h2>Emergency Meeting</h2>
+        <p>${reason}</p>
+        <p id="phaseText">Discussion phase. Voting is locked.</p>
+        <div class="vote-grid" id="voteGrid"></div>
+      `);
+      renderVoteGrid(false);
+    }
+
+    function renderVoteGrid(enabled) {
+      const grid = document.getElementById("voteGrid");
+      if (!grid) return;
+      const alivePlayers = state.players.filter(p => p.alive);
+      grid.innerHTML = alivePlayers.map(p => `<button ${enabled ? "" : "disabled"} data-vote="${p.id}">${p.nickname}</button>`).join("") +
+        `<button ${enabled ? "" : "disabled"} data-vote="skip">Skip</button>`;
+      grid.querySelectorAll("button").forEach(btn => {
+        btn.onclick = () => castVote(btn.dataset.vote);
+      });
+    }
+
+    function castVote(target) {
+      if (state.phase !== "Voting" || !local().alive) return;
+      local().voteTarget = target;
+      state.players.filter(p => p.alive && p.id !== local().id).forEach(p => {
+        if (p.voteTarget === null) {
+          const options = state.players.filter(q => q.alive && q.id !== p.id);
+          p.voteTarget = Math.random() < 0.22 ? "skip" : options[Math.floor(Math.random() * options.length)].id;
+        }
+      });
+      resolveVotes();
+    }
+
+    function resolveVotes() {
+      const votes = new Map();
+      state.players.filter(p => p.alive).forEach(p => {
+        const target = p.voteTarget ?? "skip";
+        votes.set(target, (votes.get(target) || 0) + 1);
+      });
+      const ranked = [...votes.entries()].sort((a, b) => b[1] - a[1]);
+      const tie = ranked.length > 1 && ranked[0][1] === ranked[1][1];
+      let result = "Nobody ejected.";
+      if (!tie && ranked[0][0] !== "skip") {
+        const ejected = state.players.find(p => p.id === Number(ranked[0][0]));
+        ejected.alive = false;
+        result = settings().confirmEjects
+          ? `${ejected.nickname} was ejected. ${ejected.role === "Impostor" ? "They were an Impostor." : "They were not an Impostor."}`
+          : `${ejected.nickname} was ejected.`;
+      }
+      addLog(result, "var(--yellow)");
+      state.phase = "Gameplay";
+      closeOverlay();
+      checkWin();
+      updateUi();
+    }
+
+    function useVent() {
+      const me = local();
+      if (state.phase !== "Gameplay" || !me?.alive || me.role !== "Impostor") return;
+      if (!me.inVent) {
+        const vent = nearest(vents, 42);
+        if (!vent) return addLog("Няма vent наблизо.");
+        me.inVent = true;
+        state.currentVent = vent;
+        me.x = vent.x;
+        me.y = vent.y;
+        addLog("Entered vent.", "var(--blue)");
+      } else {
+        const next = vents.find(v => v.id === state.currentVent.links[0]);
+        state.currentVent = next;
+        me.x = next.x;
+        me.y = next.y;
+        me.inVent = false;
+        addLog("Exited vent.", "var(--blue)");
+      }
+      updateUi();
+    }
+
+    function sabotage() {
+      const me = local();
+      if (state.phase !== "Gameplay" || !me?.alive) return;
+      if (me.role === "Impostor") {
+        const available = sabotageObjects.filter(o => !o.active);
+        const choice = available[Math.floor(Math.random() * available.length)];
+        if (!choice) return;
+        choice.active = true;
+        choice.timer = choice.type === "Lights" || choice.type === "Comms" ? 30 : 40;
+        addLog(`${choice.type} sabotage started.`, "var(--red)");
+      } else {
+        const obj = nearest(sabotageObjects.filter(o => o.active), 58);
+        if (!obj) return addLog("Няма активен sabotage обект наблизо.");
+        repairSabotage(obj);
+      }
+      updateUi();
+    }
+
+    function repairSabotage(obj) {
+      if (obj.type === "Lights") {
+        state.phase = "Task";
+        showOverlay(`
+          <h2>Lights</h2>
+          <p>Включи всички прекъсвачи, за да възстановиш vision radius.</p>
+          <div class="mini">${Array.from({ length: 5 }, (_, i) => `<button data-switch="${i}">0</button>`).join("")}</div>
+        `);
+        const buttons = [...document.querySelectorAll("[data-switch]")];
+        buttons.forEach(btn => {
+          btn.onclick = () => {
+            btn.textContent = btn.textContent === "0" ? "1" : "0";
+            if (buttons.every(b => b.textContent === "1")) {
+              obj.active = false;
+              obj.timer = 0;
+              state.phase = "Gameplay";
+              closeOverlay();
+              addLog("Lights repaired.", "var(--green)");
+            }
+          };
+        });
+      } else {
+        obj.active = false;
+        obj.timer = 0;
+        addLog(`${obj.type} repaired.`, "var(--green)");
+      }
+      updateUi();
+    }
+
+    function checkWin() {
+      if (state.phase === "Lobby" || state.winner) return;
+      const aliveCrew = state.players.filter(p => p.alive && p.role === "Crew").length;
+      const aliveImpostors = state.players.filter(p => p.alive && p.role === "Impostor").length;
+      if (aliveImpostors === 0) endGame("Crew", "Всички импостори са изгонени.");
+      else if (aliveImpostors >= aliveCrew) endGame("Impostor", "Импосторите вече са поне колкото crew.");
+      else if (state.tasks.length && state.tasks.every(t => t.completed)) endGame("Crew", "Всички задачи са завършени.");
+    }
+
+    function endGame(winner, reason) {
+      state.winner = winner;
+      state.phase = "End";
+      addLog(`${winner} Victory: ${reason}`, winner === "Crew" ? "var(--green)" : "var(--red)");
+      showOverlay(`
+        <h2>${winner} Victory</h2>
+        <p>${reason}</p>
+        <button class="primary" id="againBtn">Return Lobby</button>
+      `);
+      document.getElementById("againBtn").onclick = resetMatch;
+      updateUi();
+    }
+
+    function showOverlay(html) {
+      ui.dialog.innerHTML = html;
+      ui.overlay.style.display = "grid";
+    }
+
+    function closeOverlay() {
+      ui.overlay.style.display = "none";
+      ui.dialog.innerHTML = "";
+    }
+
+    function update(dt) {
+      if (state.phase === "Gameplay" && local()) {
+        moveLocal(dt);
+        moveBots(dt);
+        updateCooldowns(dt);
+        updateSabotage(dt);
+        checkWin();
+      } else if (state.phase === "Discussion") {
+        state.meetingTimer -= dt;
+        if (state.meetingTimer <= 0) {
+          state.phase = "Voting";
+          const phaseText = document.getElementById("phaseText");
+          if (phaseText) phaseText.textContent = "Voting phase.";
+          renderVoteGrid(true);
+        }
+      } else if (state.phase === "Voting") {
+        state.voteTimer -= dt;
+        if (state.voteTimer <= 0) {
+          state.players.filter(p => p.alive && p.voteTarget === null).forEach(p => p.voteTarget = "skip");
+          resolveVotes();
+        }
+      }
+    }
+
+    function moveLocal(dt) {
+      const me = local();
+      if (!me.alive || me.inVent) return;
+      let dx = 0, dy = 0;
+      if (state.keys.has("w") || state.keys.has("arrowup")) dy -= 1;
+      if (state.keys.has("s") || state.keys.has("arrowdown")) dy += 1;
+      if (state.keys.has("a") || state.keys.has("arrowleft")) dx -= 1;
+      if (state.keys.has("d") || state.keys.has("arrowright")) dx += 1;
+      const len = Math.hypot(dx, dy) || 1;
+      const speed = settings().playerSpeed * 78;
+      const nx = me.x + (dx / len) * speed * dt;
+      const ny = me.y + (dy / len) * speed * dt;
+      if (isWalkable(nx, me.y)) me.x = nx;
+      if (isWalkable(me.x, ny)) me.y = ny;
+    }
+
+    function moveBots(dt) {
+      for (const p of state.players) {
+        if (p.local || !p.alive || p.inVent) continue;
+        if (Math.random() < 0.01 || dist(p, { x: p.targetX, y: p.targetY }) < 20) {
+          const room = rooms[Math.floor(Math.random() * rooms.length)];
+          p.targetX = room.x + 30 + Math.random() * (room.w - 60);
+          p.targetY = room.y + 30 + Math.random() * (room.h - 60);
+        }
+        const angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
+        const speed = settings().playerSpeed * 45;
+        const nx = p.x + Math.cos(angle) * speed * dt;
+        const ny = p.y + Math.sin(angle) * speed * dt;
+        if (isWalkable(nx, p.y)) p.x = nx;
+        if (isWalkable(p.x, ny)) p.y = ny;
+      }
+    }
+
+    function updateCooldowns(dt) {
+      for (const p of state.players) {
+        if (p.killCooldown > 0) p.killCooldown = Math.max(0, p.killCooldown - dt);
+      }
+    }
+
+    function updateSabotage(dt) {
+      for (const obj of sabotageObjects) {
+        if (!obj.active) continue;
+        obj.timer -= dt;
+        if ((obj.type === "Reactor" || obj.type === "Oxygen") && obj.timer <= 0) {
+          endGame("Impostor", `${obj.type} не беше поправен навреме.`);
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawMap();
+      if (state.phase !== "Lobby") {
+        drawTasks();
+        drawSabotage();
+        drawBodies();
+        drawVents();
+        drawPlayers();
+        drawFog();
+      }
+    }
+
+    function drawMap() {
+      ctx.fillStyle = "#0b0f13";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#18212a";
+      ctx.strokeStyle = "#506171";
+      ctx.lineWidth = 2;
+      for (const c of corridors) {
+        ctx.fillRect(c.x, c.y, c.w, c.h);
+        ctx.strokeRect(c.x, c.y, c.w, c.h);
+      }
+      for (const room of rooms) {
+        ctx.fillStyle = "#202b34";
+        ctx.fillRect(room.x, room.y, room.w, room.h);
+        ctx.strokeStyle = "#607486";
+        ctx.strokeRect(room.x, room.y, room.w, room.h);
+        ctx.fillStyle = "#b9c8d2";
+        ctx.font = "14px Segoe UI";
+        ctx.fillText(room.name, room.x + 12, room.y + 24);
+      }
+    }
+
+    function drawTasks() {
+      for (const t of state.tasks) {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 11, 0, Math.PI * 2);
+        ctx.fillStyle = t.completed ? "#33533f" : "#ffd166";
+        ctx.fill();
+        ctx.strokeStyle = "#111";
+        ctx.stroke();
+      }
+    }
+
+    function drawSabotage() {
+      for (const o of sabotageObjects) {
+        ctx.fillStyle = o.active ? "#ff5b5f" : "#4a5a65";
+        ctx.fillRect(o.x - 14, o.y - 14, 28, 28);
+        ctx.fillStyle = "#fff";
+        ctx.font = "11px Segoe UI";
+        ctx.fillText(o.type[0], o.x - 4, o.y + 4);
+        if (o.active) {
+          ctx.fillText(Math.ceil(o.timer), o.x - 9, o.y - 20);
+        }
+      }
+    }
+
+    function drawBodies() {
+      for (const b of state.bodies) {
+        ctx.fillStyle = "#6c1117";
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y + 8, 20, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawVents() {
+      for (const v of vents) {
+        ctx.fillStyle = "#2d3e4a";
+        ctx.fillRect(v.x - 18, v.y - 10, 36, 20);
+        ctx.strokeStyle = "#7b92a4";
+        ctx.strokeRect(v.x - 18, v.y - 10, 36, 20);
+      }
+    }
+
+    function drawPlayers() {
+      const me = local();
+      for (const p of state.players) {
+        const visible = !me || p.local || me.role === "Impostor" || dist(me, p) <= currentVision();
+        if (!visible && p.alive) continue;
+        ctx.globalAlpha = p.alive ? 1 : 0.36;
+        ctx.fillStyle = p.suitColor;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 17, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#dff7ff";
+        ctx.fillRect(p.x + 4, p.y - 9, 13, 8);
+        ctx.fillStyle = "#eef4f8";
+        ctx.font = "12px Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText(p.nickname, p.x, p.y + 33);
+        if (p.role === "Impostor" && me?.role === "Impostor") {
+          ctx.fillStyle = "#ff9aa0";
+          ctx.fillText("I", p.x, p.y - 24);
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.textAlign = "left";
+    }
+
+    function currentVision() {
+      const me = local();
+      if (!me) return 9999;
+      const base = me.role === "Impostor" ? settings().visionImpostor : settings().visionCrew;
+      const lights = sabotageObjects.find(o => o.type === "Lights" && o.active);
+      return lights && me.role === "Crew" ? base * 0.25 : base;
+    }
+
+    function drawFog() {
+      const me = local();
+      if (!me || me.role === "Impostor" || !me.alive) return;
+      ctx.save();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const radius = currentVision();
+      const g = ctx.createRadialGradient(me.x, me.y, radius * 0.35, me.x, me.y, radius);
+      g.addColorStop(0, "rgba(0,0,0,1)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(me.x, me.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function updateUi() {
+      ui.state.textContent = state.phase;
+      const me = local();
+      ui.role.textContent = me ? `Role: ${me.role}${me.alive ? "" : " Ghost"}` : "Role: -";
+      ui.room.textContent = me ? `Room: ${getRoomAt(me.x, me.y)}` : "Room: Cafeteria";
+      const completed = state.tasks.filter(t => t.completed).length;
+      ui.taskBar.style.width = state.tasks.length ? `${(completed / state.tasks.length) * 100}%` : "0%";
+      const alive = state.players.filter(p => p.alive).length;
+      ui.alive.textContent = `${alive} alive`;
+      const timer = state.phase === "Discussion" ? state.meetingTimer : state.phase === "Voting" ? state.voteTimer : Math.max(...sabotageObjects.filter(o => o.active).map(o => o.timer), 0);
+      ui.timer.textContent = formatTime(timer || 0);
+      renderPlayers();
+      updateButtons();
+    }
+
+    function updateButtons() {
+      const me = local();
+      const gameplay = state.phase === "Gameplay" && me;
+      document.getElementById("taskBtn").disabled = !gameplay || !me.alive || me.role !== "Crew";
+      document.getElementById("killBtn").disabled = !gameplay || !me.alive || me.role !== "Impostor" || me.killCooldown > 0;
+      document.getElementById("killBtn").textContent = me?.role === "Impostor" && me.killCooldown > 0 ? `Kill ${Math.ceil(me.killCooldown)}` : "Kill";
+      document.getElementById("reportBtn").disabled = !gameplay || !me.alive;
+      document.getElementById("ventBtn").disabled = !gameplay || !me.alive || me.role !== "Impostor";
+      document.getElementById("sabotageBtn").disabled = !gameplay || !me.alive;
+      document.getElementById("sabotageBtn").textContent = me?.role === "Impostor" ? "Sabotage" : "Repair";
+    }
+
+    function renderPlayers() {
+      ui.players.innerHTML = state.players.map(p => `
+        <div class="player-row">
+          <span class="swatch" style="background:${p.suitColor}"></span>
+          <div>
+            <div>${p.nickname}${p.local ? " (you)" : ""}</div>
+            <div class="tag">${p.alive ? "alive" : "dead"}${local()?.role === "Impostor" ? " · " + p.role : ""}</div>
+          </div>
+          <span class="tag">${p.voteTarget === null ? "" : "voted"}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderLog() {
+      ui.log.innerHTML = state.log.map(e => `<div class="log-entry" style="border-left-color:${e.color}">${e.text}</div>`).join("");
+    }
+
+    function formatTime(t) {
+      const total = Math.max(0, Math.ceil(t));
+      return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    }
+
+    function loop(now) {
+      const dt = Math.min(0.05, (now - state.last) / 1000);
+      state.last = now;
+      update(dt);
+      draw();
+      updateUi();
+      requestAnimationFrame(loop);
+    }
+
+    document.getElementById("startBtn").onclick = startMatch;
+    document.getElementById("resetBtn").onclick = resetMatch;
+    document.getElementById("taskBtn").onclick = useTask;
+    document.getElementById("killBtn").onclick = kill;
+    document.getElementById("reportBtn").onclick = report;
+    document.getElementById("ventBtn").onclick = useVent;
+    document.getElementById("sabotageBtn").onclick = sabotage;
+
+    window.addEventListener("keydown", e => {
+      state.keys.add(e.key.toLowerCase());
+      if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase())) e.preventDefault();
+    });
+    window.addEventListener("keyup", e => state.keys.delete(e.key.toLowerCase()));
+
+    resetMatch();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
